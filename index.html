@@ -105,9 +105,9 @@ button:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
       <div class="leaf">
         <div class="face front cover">
           <span class="sticker" style="top:22px;right:20px">🎀</span><span class="sticker" style="bottom:20px;left:30px">🌸</span>
-          <div class="label"><span class="big">💌</span><h1>Buku Kecil untuk Annisa</h1></div>
-          <p class="sub">Dibuat dengan sayang, khusus untuk kamu</p>
-          <span class="hint">Ketuk untuk membuka buku</span>
+          <div class="label"><span class="big">💌</span><h1>Buku untuk Bibiww Sayangg</h1></div>
+          <p class="sub">Dibuat Kuncoro Gantengg , khusus untuk kamu</p>
+          <span class="hint">I LOVE YOU SAYANGG &amp; putar musik 🎵</span>
         </div>
         <div class="face back inside">
           <div class="tag"><small>Buku ini milik</small>Annisa Kharisma Putri 💗</div>
@@ -265,12 +265,18 @@ button:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
   }
   function stopAudio(){on=false;fade(0,400,function(){au.pause();});musUI();}
   btn.addEventListener('click',function(){if(on){userOff=true;stopAudio();}else{userOff=false;startAudio();}});
+  var evs=['pointerup','touchend','click','keydown'];
+  function unhook(){evs.forEach(function(t){document.removeEventListener(t,first);});}
   function first(e){
-    if(e.target.closest&&e.target.closest('#mus'))return;
-    ['pointerup','touchend','click'].forEach(function(t){document.removeEventListener(t,first);});
+    if(e.target&&e.target.closest&&e.target.closest('#mus'))return;
+    unhook();
     if(!on&&!userOff)startAudio();
   }
-  ['pointerup','touchend','click'].forEach(function(t){document.addEventListener(t,first);});
+  evs.forEach(function(t){document.addEventListener(t,first);});
+  (function(){
+    var pr=au.play();
+    if(pr&&pr.then)pr.then(function(){if(!userOff){on=true;fade(.85,1500);musUI();unhook();}else{au.pause();}}).catch(function(){});
+  })();
   document.addEventListener('visibilitychange',function(){
     if(document.hidden){au.pause();}else if(on){var q=au.play();if(q&&q.catch)q.catch(function(){});}
   });
