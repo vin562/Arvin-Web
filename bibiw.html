@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <!-- PENTING: Mencegah zoom otomatis di HP saat swipe atau tap -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Buku Digital untuk Annisa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- PageFlip Library (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'pacifico': ['"Pacifico"', 'cursive'],
+                        'quicksand': ['"Quicksand"', 'sans-serif'],
+                    },
+                    colors: {
+                        'cute-pink': '#fdf2f8',
+                        'cute-darkpink': '#be185d',
+                        'cute-border': '#f9a8d4',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Background pattern yang lucu */
+        body {
+            background-color: #ffe4e6;
+            background-image: radial-gradient(#f9a8d4 2px, transparent 2px);
+            background-size: 30px 30px;
+            overflow: hidden; /* Mencegah scroll di body agar fokus ke buku */
+            touch-action: none; /* Mencegah pull-to-refresh di HP saat swipe buku */
+        }
+
+        /* Hujan Hati (Floating Hearts Animation) */
+        .floating-element {
+            position: absolute;
+            bottom: -50px;
+            opacity: 0;
+            animation: float-up 10s linear infinite;
+            z-index: 0;
+            pointer-events: none; /* SANGAT PENTING: Agar tidak mengganggu swipe buku */
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(0) scale(0.5) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(-110vh) scale(1.2) rotate(360deg); opacity: 0; }
+        }
+
+        /* Container Utama Buku */
+        .book-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 76vh; /* Menyediakan gap aman 12vh di atas dan bawah */
+            margin: 12vh 0; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        /* Bingkai Renda (Lace Border) Atas & Bawah */
+        .lace-border-top {
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 35px;
+            background-image: radial-gradient(circle at 20px 0, transparent 21px, #fbcfe8 22px);
+            background-size: 40px 35px;
+            z-index: 20;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
+        }
+
+        .lace-border-bottom {
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 35px;
+            background-image: radial-gradient(circle at 20px 35px, transparent 21px, #fbcfe8 22px);
+            background-size: 40px 35px;
+            z-index: 20;
+            filter: drop-shadow(0 -2px 3px rgba(0,0,0,0.1));
+        }
+
+        /* Teks Dekorasi Bawah & Atas */
+        .decor-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            z-index: 30;
+            font-family: 'Pacifico', cursive;
+            color: #be185d;
+            font-size: 1.5rem;
+            pointer-events: none;
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -2px -2px 0px rgba(255,255,255,0.8), 2px -2px 0px rgba(255,255,255,0.8), -2px 2px 0px rgba(255,255,255,0.8);
+        }
+        .decor-text.top { top: 40px; }
+        .decor-text.bottom { bottom: 40px; }
+
+        .corner-emoji {
+            position: absolute;
+            opacity: 0.8;
+            z-index: 20;
+            pointer-events: none;
+            font-size: 2rem;
+        }
+
+        /* Styling Halaman Umum */
+        .page {
+            background-color: #fff0f5;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .page.cover {
+            background-color: #db2777;
+            box-shadow: inset 5px 0 20px rgba(0,0,0,0.2);
+        }
+
+        .page-content {
+            width: 100%;
+            height: 100%;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Frame putus-putus lucu di dalam halaman */
+        .page-inner-frame {
+            flex: 1;
+            border: 2px dashed #f9a8d4;
+            border-radius: 8px;
+            padding: 1rem;
+            background-image: linear-gradient(rgba(253, 242, 248, 0.6) 1px, transparent 1px);
+            background-size: 100% 1.5em; 
+            overflow: hidden; /* Dikunci agar tidak bisa scroll */
+            position: relative;
+        }
+
+        .ribbon {
+            position: absolute;
+            top: -5px; right: 15px;
+            width: 25px; height: 50px;
+            background-color: #fb7185;
+            z-index: 50;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+            animation: sway 3s ease-in-out infinite alternate;
+            transform-origin: top;
+        }
+
+        @keyframes sway { 0% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
+        
+        .heart-beat { animation: beat 1s infinite alternate; }
+        @keyframes beat { 0% { transform: scale(1); } 100% { transform: scale(1.15); } }
+
+        .swipe-hint {
+            position: absolute;
+            bottom: 6%;
+            right: 5%;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 6px 12px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: bold;
+            color: #db2777;
+            font-size: 0.8rem;
+            pointer-events: none;
+            animation: fadeHint 4s forwards;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        @keyframes fadeHint { 0%, 70% { opacity: 1; } 100% { opacity: 0; display: none; } }
+        .hand-icon { animation: swipeHand 1.5s infinite alternate; }
+        @keyframes swipeHand { 0% { transform: translateX(0); } 100% { transform: translateX(-10px); } }
+
+        /* OPTIMASI HP (MOBILE PERFECT) */
+        @media (max-width: 768px) {
+            .lace-border-top, .lace-border-bottom { height: 20px; background-size: 30px 20px; }
+            .lace-border-bottom { background-position: bottom; }
+            .decor-text { font-size: 1.1rem; }
+            .decor-text.top { top: 25px; }
+            .decor-text.bottom { bottom: 25px; }
+            .corner-emoji { font-size: 1.5rem; }
+            .page-content { padding: 10px; }
+            .page-inner-frame { padding: 8px; }
+        }
+    </style>
+</head>
+<body class="font-quicksand text-gray-800">
+
+    <!-- Bingkai Renda -->
+    <div class="lace-border-top"></div>
+    <div class="lace-border-bottom"></div>
+
+    <!-- Teks Dekorasi -->
+    <div class="decor-text top flex justify-center items-center gap-1">
+        <span class="animate-pulse">🌸</span> <span>Welcome to Our Story</span> <span class="animate-pulse">🌸</span>
+    </div>
+    <div class="decor-text bottom flex justify-center items-center gap-1">
+        <span class="animate-bounce">🎀</span> <span>Made with 100% Love</span> <span class="animate-bounce">🎀</span>
+    </div>
+
+    <!-- Ornamen Gantung (Dikecilkan via CSS Media Query) -->
+    <div class="corner-emoji top-10 left-3 animate-pulse">✨</div>
+    <div class="corner-emoji top-12 right-4 animate-pulse" style="animation-delay: 1s;">💖</div>
+    <div class="corner-emoji bottom-12 left-4 animate-bounce" style="animation-delay: 0.5s;">🧸</div>
+    <div class="corner-emoji bottom-10 right-3 animate-bounce" style="animation-delay: 1.5s;">🌷</div>
+
+    <!-- Container Animasi Background -->
+    <div id="floating-bg" class="w-full h-full absolute top-0 left-0 pointer-events-none z-0"></div>
+
+    <!-- Hint Geser Buku -->
+    <div class="swipe-hint" id="swipe-hint">
+        <span class="hand-icon">👈</span> Geser buku
+    </div>
+
+    <!-- Container Utama Buku -->
+    <div class="book-wrapper">
+        <div id="book">
+            
+            <!-- HALAMAN 1 (SAMPUL DEPAN) -->
+            <div class="page cover" data-density="hard">
+                <div class="page-content bg-pink-600 text-white relative flex flex-col justify-center items-center text-center">
+                    <div class="ribbon"></div>
+                    <div class="w-full h-full border-2 border-pink-300 border-dashed rounded-lg p-4 flex flex-col justify-center bg-pink-700/20 backdrop-blur-sm">
+                        <h1 class="font-pacifico text-3xl sm:text-4xl text-pink-100 mb-4 drop-shadow-md">
+                            Hai Sayang,
+                        </h1>
+                        <p class="text-[11px] sm:text-sm leading-snug font-semibold mb-3 drop-shadow-sm">
+                            Buku ini sengaja aku buat khusus untuk kamu. Isinya adalah semua hal tentang kita, hal-hal kecil yang aku suka dari kamu, dan alasan kenapa aku bersyukur banget bisa punya kamu di hidupku.
+                        </p>
+                        <p class="text-[11px] sm:text-sm leading-snug font-semibold drop-shadow-sm">
+                            Setiap lembar di buku ini adalah bukti kalau kamu selalu ada di pikiranku. Semoga suka ya! ✨🌸
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HALAMAN 2: PERFECT FIT MOBILE -->
+            <div class="page" data-density="soft">
+                <div class="page-content">
+                    <div class="page-inner-frame flex flex-col justify-evenly">
+                        <div class="bg-white p-1.5 sm:p-2 rounded-md shadow-sm border border-pink-200">
+                            <h2 class="font-bold text-pink-600 text-[11px] sm:text-sm leading-none">📖 [Annisa Kharisma Putri]</h2>
+                            <span class="text-[8px] sm:text-[10px] font-bold text-white bg-pink-300 px-1.5 py-0.5 rounded-full inline-block my-1">(Noun / Kata Benda)</span>
+                            <p class="text-[9px] sm:text-xs font-semibold text-gray-600 leading-tight">
+                                <span class="text-pink-500 font-bold">Definisi:</span> Rumah terbaik tempat aku pulang. Manusia paling sabar yang selalu bisa bikin aku senyum sekesal apa pun hari yang aku lewati. Sumber bahagia nomor satu di hidupku.
+                            </p>
+                        </div>
+                        <div class="bg-white p-1.5 sm:p-2 rounded-md shadow-sm border border-pink-200">
+                            <h2 class="font-bold text-pink-600 text-[11px] sm:text-sm leading-none">📖 RUMAH</h2>
+                            <span class="text-[8px] sm:text-[10px] font-bold text-white bg-pink-300 px-1.5 py-0.5 rounded-full inline-block my-1">(Noun / Kata Benda)</span>
+                            <p class="text-[9px] sm:text-xs font-semibold text-gray-600 leading-tight">
+                                <span class="text-pink-500 font-bold">Definisi:</span> Bukan bangunan, bukan tempat. Rumahku itu kamu. Tempat paling aman buat cerita, nangis, dan jadi diri sendiri tanpa perlu takut dihakimi.
+                            </p>
+                        </div>
+                        <div class="bg-white p-1.5 sm:p-2 rounded-md shadow-sm border border-pink-200">
+                            <h2 class="font-bold text-pink-600 text-[11px] sm:text-sm leading-none">📖 KANGEN</h2>
+                            <span class="text-[8px] sm:text-[10px] font-bold text-white bg-pink-300 px-1.5 py-0.5 rounded-full inline-block my-1">(Verb / Kata Kerja)</span>
+                            <p class="text-[9px] sm:text-xs font-semibold text-gray-600 leading-tight">
+                                <span class="text-pink-500 font-bold">Definisi:</span> Perasaan yang muncul tiap kali kamu gak balas chat dalam waktu 5 menit, atau efek samping setiap kali kita selesai ketemu.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HALAMAN 3 -->
+            <div class="page" data-density="soft">
+                <div class="page-content">
+                    <div class="page-inner-frame flex flex-col justify-center">
+                        <h2 class="font-pacifico text-lg sm:text-2xl text-pink-600 mb-1 text-center leading-tight">Kenapa aku sayang kamu?</h2>
+                        <p class="text-center text-[9px] sm:text-xs font-bold text-pink-400 mb-3">Ini beberapa alasannya 🎀:</p>
+                        
+                        <ul class="space-y-2 sm:space-y-3">
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 bg-pink-400 text-white rounded-full flex items-center justify-center font-bold text-[9px] sm:text-xs shadow-md mt-0.5">1</span>
+                                <span class="font-semibold text-gray-700 text-[9px] sm:text-xs leading-tight">Cara kamu natap aku yang selalu bikin aku merasa berharga.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 bg-pink-400 text-white rounded-full flex items-center justify-center font-bold text-[9px] sm:text-xs shadow-md mt-0.5">2</span>
+                                <span class="font-semibold text-gray-700 text-[9px] sm:text-xs leading-tight">Kamu selalu mendengarkan cerita random-ku tanpa pernah kelihatan bosan.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 bg-pink-400 text-white rounded-full flex items-center justify-center font-bold text-[9px] sm:text-xs shadow-md mt-0.5">3</span>
+                                <span class="font-semibold text-gray-700 text-[9px] sm:text-xs leading-tight">Wangi kamu yang selalu bikin tenang tiap kali kita pelukan.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 bg-pink-400 text-white rounded-full flex items-center justify-center font-bold text-[9px] sm:text-xs shadow-md mt-0.5">4</span>
+                                <span class="font-semibold text-gray-700 text-[9px] sm:text-xs leading-tight">Kamu gak pernah capek buat ngadepin mood aku yang suka naik turun.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 bg-pink-400 text-white rounded-full flex items-center justify-center font-bold text-[9px] sm:text-xs shadow-md mt-0.5">5</span>
+                                <span class="font-semibold text-gray-700 text-[9px] sm:text-xs leading-tight">Karena bersama kamu, aku gak perlu pura-pura jadi orang lain.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HALAMAN 4 -->
+            <div class="page" data-density="soft">
+                <div class="page-content">
+                    <div class="page-inner-frame flex flex-col justify-evenly">
+                        <div class="bg-pink-100 rounded-md p-2 shadow-sm border border-pink-200">
+                            <h3 class="font-bold text-pink-600 text-[10px] sm:text-sm mb-1 flex items-center gap-1">
+                                <span>🧪</span> RUMUS MATEMATIKA KITA:
+                            </h3>
+                            <p class="font-semibold text-gray-700 text-[9px] sm:text-xs ml-4">Aku + Kamu = Bahagia ✨</p>
+                            <p class="font-semibold text-gray-700 text-[9px] sm:text-xs ml-4">Aku - Kamu = Galau berat 🥀</p>
+                        </div>
+
+                        <div class="flex items-start gap-2">
+                            <span class="text-base sm:text-xl">🌊</span>
+                            <p class="font-semibold text-gray-700 text-[9px] sm:text-xs leading-tight">
+                                Kamu itu kayak garam di laut. Nggak kelihatan sih, tapi selalu ada dan ngasih rasa di hidupku yang hambar ini.
+                            </p>
+                        </div>
+
+                        <div class="flex items-start gap-2">
+                            <span class="text-base sm:text-xl">🦖</span>
+                            <p class="font-semibold text-gray-700 text-[9px] sm:text-xs leading-tight">
+                                Kalau mencintaimu adalah sebuah pekerjaan, kayaknya aku bakal jadi karyawan paling kaya karena aku bakal lembur setiap hari tanpa protes.
+                            </p>
+                        </div>
+
+                        <div class="bg-red-50 rounded-md p-2 border border-red-200 shadow-sm">
+                            <p class="font-semibold text-pink-800 text-[9px] sm:text-xs leading-tight">
+                                💌 <span class="font-bold">Pengingat:</span> Jangan lupa makan, jangan lupa istirahat, dan jangan lupa kalau ada aku di sini yang sayang banget sama kamu!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HALAMAN 5 (Closing) -->
+            <div class="page" data-density="soft">
+                <div class="page-content">
+                    <div class="page-inner-frame flex flex-col items-center justify-center text-center">
+                        <span class="text-2xl sm:text-3xl mb-3">💖</span>
+                        <p class="text-[10px] sm:text-sm leading-snug text-gray-700 font-semibold mb-4">
+                            Terima kasih ya sudah berjalan sejauh ini sama aku. Terima kasih sudah memilih aku jadi bagian dari cerita hidupmu. Buku ini mungkin ada halaman terakhirnya, tapi semoga cerita kita gak akan pernah ada habisnya.
+                        </p>
+                        <h2 class="font-pacifico text-lg sm:text-2xl text-pink-600 mt-2 leading-tight">
+                            I love you today,<br>tomorrow,<br>and forever.
+                        </h2>
+                        <div class="text-red-500 mt-4 heart-beat text-3xl sm:text-4xl">♥️</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HALAMAN 6 (SAMPUL BELAKANG) -->
+            <div class="page cover" data-density="hard">
+                <div class="page-content bg-pink-600 relative flex flex-col justify-center items-center text-center">
+                    <div class="w-full h-full border-2 border-pink-300 border-dashed rounded-lg p-4 flex flex-col items-center justify-center bg-pink-700/20 backdrop-blur-sm">
+                        <div class="text-white opacity-90 font-quicksand font-bold tracking-widest text-[10px] sm:text-xs">
+                            MADE WITH LOVE
+                        </div>
+                        <div class="mt-2 text-pink-200 opacity-80 text-3xl sm:text-4xl">🎀</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script Logika Flipbook & Hujan Hati -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Konfigurasi StPageFlip Spesifik Permintaan Mobile Perfect
+            const pageFlip = new St.PageFlip(
+                document.getElementById("book"),
+                {
+                    width: 320, 
+                    height: 480, 
+                    size: "stretch", 
+                    minWidth: 260,
+                    maxWidth: 500,
+                    minHeight: 380,
+                    maxHeight: 650,
+                    maxShadowOpacity: 0.3,
+                    showCover: true,
+                    mobileScrollSupport: false, 
+                    usePortrait: true 
+                }
+            );
+
+            pageFlip.loadFromHTML(document.querySelectorAll(".page"));
+
+            pageFlip.on('flip', (e) => {
+                document.getElementById('swipe-hint').style.display = 'none';
+            });
+
+            // Logika Hujan Hati di Background
+            const bgContainer = document.getElementById('floating-bg');
+            const emojis = ['💖', '🌸', '✨', '🎀', '💕'];
+            const totalElements = 20; // Dikurangi sedikit agar lebih ringan di HP
+
+            for (let i = 0; i < totalElements; i++) {
+                let el = document.createElement('div');
+                el.className = 'floating-element';
+                el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.fontSize = (Math.random() * 12 + 12) + 'px';
+                el.style.animationDuration = (Math.random() * 8 + 6) + 's';
+                el.style.animationDelay = (Math.random() * 10) + 's';
+                bgContainer.appendChild(el);
+            }
+        });
+    </script>
+</body>
+</html>
